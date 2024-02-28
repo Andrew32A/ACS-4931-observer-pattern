@@ -71,17 +71,71 @@ class CurrentConditionsDisplay(Observer):
         weatherData.registerObserver(self) # register the observer 
                                            # so it gets data updates.
     def update(self, temperature, humidity, pressure):
-        self.temeprature = temperature
+        self.temperature = temperature
         self.humidity = humidity
         self.pressure = pressure
         self.display()
         
     def display(self):
-        print("Current conditions:", self.temerature, 
+        print("<====================== Current conditions ======================>")
+        print("Current conditions:", self.temperature, 
               "F degrees and", self.humidity,"[%] humidity",
               "and pressure", self.pressure)
         
 # TODO: implement StatisticsDisplay class and ForecastDisplay class.
+class StatisticsDisplay(Observer):
+    def __init__(self, weatherData):
+        self.maxTemp = 0.0
+        self.minTemp = 200
+        self.tempSum = 0.0
+        self.numReadings = 0
+        self.weatherData = weatherData
+        weatherData.registerObserver(self)
+    
+    def update(self, temperature, humidity, pressure):
+        self.tempSum += temperature
+        self.numReadings += 1
+
+        self.maxTemp = max(self.maxTemp, temperature)
+        self.minTemp = min(self.minTemp, temperature)
+        
+        self.display()
+
+    def display(self):
+        print("<====================== Weather Statistics ======================>")
+        print("Avg/Max/Min temperature = " + str(self.tempSum / self.numReadings) +
+              "/" + str(self.maxTemp) + "/" + str(self.minTemp))
+
+class ForecastDisplay(Observer):
+    def __init__(self, weatherData):
+        self.currentPressure = 29.92
+        self.lastPressure = 0.0
+        self.forecastTemp = 0.0
+        self.forecastHumidity = 0.0
+        self.forecastPressure = 0.0
+        self.weatherData = weatherData
+        weatherData.registerObserver(self)
+
+    def update(self, temperature, humidity, pressure):
+        self.lastPressure = self.currentPressure
+        self.currentPressure = pressure
+        self.forecastTemp = temperature + 0.11 * humidity + 0.2 * pressure
+        self.forecastHumidity = humidity - 0.9 * humidity
+        self.forecastPressure = pressure + 0.1 * temperature - 0.21 * pressure
+        self.display()
+
+    def display(self):
+        print(f"Forecast Temp: {self.forecastTemp}F")
+        print(f"Forecast Humidity: {self.forecastHumidity}%")
+        print(f"Forecast Pressure: {self.forecastPressure}inHg")
+        print("General Forecast: ", end="")
+        if self.currentPressure > self.lastPressure:
+            print("Improving weather on the way!")
+        elif self.currentPressure == self.lastPressure:
+            print("More of the same")
+        else:
+            print("Watch out for cooler, rainy weather")
+
     
     
 class WeatherStation:
@@ -92,15 +146,21 @@ class WeatherStation:
         # TODO: Create two objects from StatisticsDisplay class and 
         # ForecastDisplay class. Also, register them to the concrete instance
         # of the Subject class so they get the measurements' updates.
+        statistics_display = StatisticsDisplay(weather_data)
+        forecast_display = ForecastDisplay(weather_data)
         
         # The StatisticsDisplay class should keep track of the min/average/max
         # measurements and display them.
+        statistics_display.update(80, 65, 30.4)
+        statistics_display.display()
         
         # The ForecastDisplay class shows the weather forecast based on the current
         # temperature, humidity and pressure. Use the following formulas :
         # forcast_temp = temperature + 0.11 * humidity + 0.2 * pressure
         # forcast_humadity = humidity - 0.9 * humidity
         # forcast_pressure = pressure + 0.1 * temperature - 0.21 * pressure
+        forecast_display.update(80, 65, 30.4)
+        forecast_display.display()
         
         weather_data.setMeasurements(80, 65,30.4)
         weather_data.setMeasurements(82, 70,29.2)
